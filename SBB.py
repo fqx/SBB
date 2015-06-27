@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = '0.02'
+
+__version__ = '0.03'
 __author__ = 'Julien G. (@bfishadow) and Sean F. (@fqx)'
 
 '''
@@ -12,8 +13,10 @@ Or simply save them anywhere as archives.
 
 import sys
 import urllib2
+import mimetypes
 import os
-
+import os.path
+from time import strftime
 
 # noinspection PyPep8Naming
 def getBetween(str, str1, str2):
@@ -95,9 +98,23 @@ if strUserOrder != "desc":
     arrBlogPost.reverse()
 
 intCounter = 0
-# strHTML4Index = ""
+strTOC = ""
+strHTML4Index = ""
 if not os.path.exists('OEBPS'):
     os.mkdir('OEBPS')
+
+
+
+
+# Initialize the mimetypes database
+mimetypes.init()
+
+
+
+
+
+manifest = ""
+spine = ""
 
 for strCurrentBlogPostID in arrBlogPost:
     intCounter += 1
@@ -121,8 +138,8 @@ for strCurrentBlogPostID in arrBlogPost:
     strBlogPostTime = getBetween(strPageCode, '<span class="time SG_txtc">(', ')</span><div class="turnBoxzz">')
 
     # Write into local file
-    strLocalFilename = "/OEBPS/Post_" + str(intCounter).zfill(5) + "_" + strCurrentBlogPostID + ".html"
-    objLocalFile = os.getcwd() + strLocalFilename
+    strLocalFilename = "Post_" + str(intCounter) + "_" + strCurrentBlogPostID + ".html"
+    objLocalFile = os.getcwd() + "/OEBPS/" + strLocalFilename
     strHTML4Post = ('<!DOCTYPE html\n'
                     'PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n'
                     '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
@@ -135,35 +152,35 @@ for strCurrentBlogPostID in arrBlogPost:
     objFileArticle = open(objLocalFile, "w")
     objFileArticle.write(strHTML4Post)
     objFileArticle.close()
+    mime = mimetypes.guess_type(objLocalFile,strict=True)
+    manifest += '\t<item id = "file_%s" href="%s" media-type="%s"/>\n' % (intCounter, strLocalFilename, mime[0])
+    spine += '\n\t<itemref idref="file_%s" />' % (intCounter)
 
-    # strHTML4Index = strHTML4Index + '<li><a href="' + strLocalFilename + '">' + strBlogPostTitle + '</a></li>\n'
+    strTOC += '''<navPoint class="chapter " id="{0:s}" playorder="{1:s}">
+<navLabel>
+<text>{2:s}</text>
+</navLabel>
+<content src="{3:s}"/>
+</navPoint>'''.format(str(intCounter), str(intCounter + 1), strBlogPostTitle, strLocalFilename)
+    strHTML4Index = strHTML4Index + '<li><a href="' + strLocalFilename + '">' + strBlogPostTitle + '</a></li>\n'
 
     print intCounter, "/", intBlogPostCount
 
-# strCurrentTimestamp = str(strftime("%Y-%m-%d %H:%M:%S"))
-# strHTML4Index = "<html>\n<head>\n<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />\n<title>" + strBlogName + "博客文章汇总</title>\n</head>\n<body>\n<h2>新浪博客：" + strBlogName + "</h2>\n<p>共" + str(
-#     intBlogPostCount) + "篇文章，最后更新：<em>" + strCurrentTimestamp + "</em></p>\n<ol>\n" + strHTML4Index + "\n</ol>\n</body>\n</html>"
-# objFileIndex = open("index.html", "w")
-# objFileIndex.write(strHTML4Index);
-# objFileIndex.close()
+strCurrentTimestamp = str(strftime("%Y-%m-%d %H:%M:%S"))
+strHTML4Index = ('<!DOCTYPE html\n'
+                    'PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n'
+                    '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
+                    '<html xmlns="http://www.w3.org/1999/xhtml" lang="zh" xml:lang="zh">\n'
+                    '    <head>\n'
+                    '    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
+                    '    <title>'
+                    ) + strBlogName + "博客文章汇总</title>\n</head>\n<body>\n<h2>新浪博客：" + strBlogName + "</h2>\n<p>共" + str(
+    intBlogPostCount) + "篇文章，最后更新：<em>" + strCurrentTimestamp + "</em></p>\n<ol>\n" + strHTML4Index + "\n</ol>\n</body>\n</html>"
+objFileIndex = open("OEBPS/index.html", "w")
+objFileIndex.write(strHTML4Index)
+objFileIndex.close()
 
-# Generate OPF file
-import mimetypes
-import glob
-import os
-import os.path
-
-# Initialize the mimetypes database
-mimetypes.init()
-# Create the package.opf file
-package = open('OEBPS/package.opf', 'w')
-
-# The glob below should encompass everything under
-# OEBPS but I'm not certain how it'll work
-package_content = glob.glob('OEBPS/*.html')
-# package_content += glob.glob('OEBPS/*/*')
-# package_content += glob.glob('OEBPS/*/*/*')
-
+# build opf
 template_top1 = '''<package xmlns="http://www.idpf.org/2007/opf"
   unique-identifier="book-id"
   version="3.0" xml:lang="zh">
@@ -186,26 +203,51 @@ template_transition = '''</manifest>
   <spine toc="ncx">'''
 
 template_bottom = '''</spine>
+<guide>
+<reference type="toc" title="Table of Contents" href="index.html"></reference>
+</guide>
 </package>'''
+# Create the package.opf file
+package = open('OEBPS/package.opf', 'w')
 
-manifest = ""
-spine = ""
-
-# Write each HTML file to the ebook, collect information for the index
-for i, item in enumerate(package_content):
-    basename = os.path.basename(item)
-    mime = mimetypes.guess_type(item, strict=True)
-    manifest += '\t<item id="file_%s" href="%s" media-type="%s"/>\n' % (i + 1, basename, mime[0])
-    spine += '\n\t<itemref idref="file_%s" />' % (i + 1)
-
-# I don't remember my python all that well to remember
-# how to print the interpolated content.
-# This should do for now.
 package.write(template_top1)
 package.write(template_title)
 package.write(template_top2)
 package.write(manifest)
+package.write('''<item id="toc" media-type="application/x-dtbncx+xml" href="toc.ncx"/>
+<item id="index" media-type="text/html" href="index.html"/>''')
 package.write(template_transition)
 package.write(spine)
+package.write('''<itemref idref="toc"/>
+<itemref idref="index"/>''')
 package.write(template_bottom)
 package.close()
+
+#build TOC
+strTOC = '''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
+"http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+
+<!--
+For a detailed description of NCX usage please refer to:
+http://www.idpf.org/2007/opf/OPF_2.0_final_spec.html#Section2.4.1
+-->
+
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="zh-CN">
+<head>
+<meta name="dtb:uid" content=""/>
+<meta name="dtb:depth" content="2"/>
+<meta name="dtb:totalPageCount" content="0"/>
+<meta name="dtb:maxPageNumber" content="0"/>
+</head>
+<navMap>
+<navPoint class="toc" id="toc" playOrder="1">
+<navLabel>
+<text>Table of Contents</text>
+</navLabel>
+<content src="index.html"/>
+</navPoint>'''  + strTOC + '''</navmap>
+</ncx>'''
+objTOC = open("OEBPS/toc.ncx","w")
+objTOC.write(strTOC)
+objTOC.close()
