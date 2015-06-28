@@ -109,10 +109,6 @@ if not os.path.exists('OEBPS'):
 # Initialize the mimetypes database
 mimetypes.init()
 
-
-
-
-
 manifest = ""
 spine = ""
 
@@ -152,7 +148,7 @@ for strCurrentBlogPostID in arrBlogPost:
     objFileArticle = open(objLocalFile, "w")
     objFileArticle.write(strHTML4Post)
     objFileArticle.close()
-    mime = mimetypes.guess_type(objLocalFile,strict=True)
+    mime = mimetypes.guess_type(objLocalFile, strict=True)
     manifest += '\t<item id = "file_%s" href="%s" media-type="%s"/>\n' % (intCounter, strLocalFilename, mime[0])
     spine += '\n\t<itemref idref="file_%s" />' % (intCounter)
 
@@ -168,13 +164,13 @@ for strCurrentBlogPostID in arrBlogPost:
 
 strCurrentTimestamp = str(strftime("%Y-%m-%d %H:%M:%S"))
 strHTML4Index = ('<!DOCTYPE html\n'
-                    'PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n'
-                    '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
-                    '<html xmlns="http://www.w3.org/1999/xhtml" lang="zh" xml:lang="zh">\n'
-                    '    <head>\n'
-                    '    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
-                    '    <title>'
-                    ) + strBlogName + "博客文章汇总</title>\n</head>\n<body>\n<h2>新浪博客：" + strBlogName + "</h2>\n<p>共" + str(
+                 'PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"\n'
+                 '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
+                 '<html xmlns="http://www.w3.org/1999/xhtml" lang="zh" xml:lang="zh">\n'
+                 '    <head>\n'
+                 '    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
+                 '    <title>'
+                 ) + strBlogName + "博客文章汇总</title>\n</head>\n<body>\n<h2>新浪博客：" + strBlogName + "</h2>\n<p>共" + str(
     intBlogPostCount) + "篇文章，最后更新：<em>" + strCurrentTimestamp + "</em></p>\n<ol>\n" + strHTML4Index + "\n</ol>\n</body>\n</html>"
 objFileIndex = open("OEBPS/index.html", "w")
 objFileIndex.write(strHTML4Index)
@@ -223,7 +219,7 @@ package.write('''<itemref idref="toc"/>
 package.write(template_bottom)
 package.close()
 
-#build TOC
+# build TOC
 strTOC = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
 "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
@@ -246,8 +242,8 @@ http://www.idpf.org/2007/opf/OPF_2.0_final_spec.html#Section2.4.1
 <text>Table of Contents</text>
 </navLabel>
 <content src="index.html"/>
-</navPoint>'''  + strTOC + '''</navmap>
+</navPoint>''' + strTOC + '''</navmap>
 </ncx>'''
-objTOC = open("OEBPS/toc.ncx","w")
+objTOC = open("OEBPS/toc.ncx", "w")
 objTOC.write(strTOC)
 objTOC.close()
